@@ -9,8 +9,8 @@ from telegram.ext import (
 )
 
 # ==================== НАЛАШТУВАННЯ ====================
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8537746977:AAGcsP4d2Fig3O_p1mMQnXBjGe8F_I6VJf4")
-TEACHER_PASSWORD = "school169"  # Пароль для вчителів (можна змінити)
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
+TEACHER_PASSWORD = "school26"  # Пароль для вчителів (можна змінити)
 CREATOR_USERNAME = "@aquaee"
 DATA_FILE = "school_data.json"
 
