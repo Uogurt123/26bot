@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Школа №26</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Geologica:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a; --surface: #111827; --surface2: #1a2236;
+    --accent: #4f8ef7; --accent2: #7c3aed; --gold: #f59e0b;
+    --green: #10b981; --red: #ef4444; --text: #f1f5f9;
+    --text2: #94a3b8; --border: rgba(79,142,247,0.15); --radius: 16px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:'Geologica',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+  /* LOADER */
+  #loader { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px; z-index:999; transition:opacity 0.4s; }
+  .loader-icon { font-size:48px; animation:pulse 1.2s ease-in-out infinite; }
+  .loader-text { font-family:'Unbounded',sans-serif; font-size:13px; color:var(--text2); letter-spacing:2px; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+
+  /* HEADER */
+  .header { background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%); padding:20px 20px 24px; position:relative; overflow:hidden; }
+  .header::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; background:radial-gradient(circle,rgba(79,142,247,0.2) 0%,transparent 70%); border-radius:50%; }
+  .header-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; position:relative; z-index:1; }
+  .school-badge { display:flex; align-items:center; gap:10px; }
+  .school-icon { width:40px; height:40px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .school-name { font-family:'Unbounded',sans-serif; font-size:13px; font-weight:700; line-height:1.3; }
+  .school-name span { display:block; font-size:10px; color:var(--text2); font-weight:400; }
+  .user-avatar { width:38px; height:38px; background:linear-gradient(135deg,var(--accent2),#a855f7); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; }
+  .greeting { position:relative; z-index:1; }
+  .greeting-hello { font-size:13px; color:var(--text2); margin-bottom:2px; }
+  .greeting-name { font-family:'Unbounded',sans-serif; font-size:20px; font-weight:700; background:linear-gradient(90deg,#fff,var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .greeting-class { display:inline-block; margin-top:6px; background:rgba(79,142,247,0.15); border:1px solid rgba(79,142,247,0.3); padding:3px 10px; border-radius:20px; font-size:11px; color:var(--accent); font-weight:500; }
+  .teacher-badge { display:inline-block; margin-top:6px; margin-left:6px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); padding:3px 10px; border-radius:20px; font-size:11px; color:var(--green); font-weight:500; }
+
+  /* NAV */
+  .nav { display:flex; background:var(--surface); border-bottom:1px solid var(--border); overflow-x:auto; scrollbar-width:none; padding:0 8px; position:sticky; top:0; z-index:10; }
+  .nav::-webkit-scrollbar { display:none; }
+  .nav-btn { flex-shrink:0; padding:14px 16px; font-family:'Geologica',sans-serif; font-size:12px; font-weight:500; color:var(--text2); background:none; border:none; cursor:pointer; display:flex; align-items:center; gap:6px; position:relative; transition:color 0.2s; white-space:nowrap; }
+  .nav-btn.active { color:var(--accent); }
+  .nav-btn.active::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:var(--accent); border-radius:2px 2px 0 0; }
+  .nav-btn .nav-icon { font-size:16px; }
+
+  /* CONTENT */
+  .content { padding:20px 16px; min-height:calc(100vh - 200px); }
+  .section { display:none; animation:fadeUp 0.3s ease; }
+  .section.active { display:block; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+  /* CARDS */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:12px; }
+  .card-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .card-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .card-icon.blue { background:rgba(79,142,247,0.15); }
+  .card-icon.green { background:rgba(16,185,129,0.15); }
+  .card-icon.gold { background:rgba(245,158,11,0.15); }
+  .card-icon.red { background:rgba(239,68,68,0.15); }
+  .card-title { font-weight:600; font-size:14px; flex:1; }
+  .card-badge { font-size:10px; padding:2px 8px; border-radius:20px; font-weight:600; }
+  .badge-blue { background:rgba(79,142,247,0.15); color:var(--accent); }
+  .badge-green { background:rgba(16,185,129,0.15); color:var(--green); }
+  .badge-gold { background:rgba(245,158,11,0.15); color:var(--gold); }
+  .card-text { font-size:13px; color:var(--text2); line-height:1.5; }
+  .card-meta { display:flex; align-items:center; gap:12px; margin-top:10px; font-size:11px; color:var(--text2); }
+
+  /* SECTION TITLE */
+  .section-title { font-family:'Unbounded',sans-serif; font-size:16px; font-weight:700; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* DAY PICKER */
+  .day-picker { display:flex; gap:8px; margin-bottom:16px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; }
+  .day-picker::-webkit-scrollbar { display:none; }
+  .day-btn { flex-shrink:0; padding:8px 14px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text2); font-family:'Geologica',sans-serif; font-size:12px; font-weight:500; cursor:pointer; transition:all 0.2s; }
+  .day-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .day-btn.today { border-color:rgba(79,142,247,0.4); color:var(--accent); }
+
+  /* LESSON */
+  .lesson { display:flex; align-items:flex-start; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .lesson:last-child { border-bottom:none; }
+  .lesson-num { width:28px; height:28px; background:var(--surface2); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:var(--accent); flex-shrink:0; }
+  .lesson-info { flex:1; }
+  .lesson-name { font-weight:600; font-size:14px; margin-bottom:2px; }
+  .lesson-time { font-size:11px; color:var(--text2); display:flex; align-items:center; gap:8px; }
+  .lesson-room { background:var(--surface2); padding:1px 6px; border-radius:4px; font-size:10px; }
+
+  /* HW */
+  .hw-day-label { font-family:'Unbounded',sans-serif; font-size:11px; color:var(--accent); letter-spacing:1px; margin:16px 0 8px; text-transform:uppercase; }
+
+  /* ANNOUNCE */
+  .announce-card { background:linear-gradient(135deg,var(--surface) 0%,rgba(79,142,247,0.05) 100%); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:12px; }
+  .announce-top { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .announce-dot { width:8px; height:8px; background:var(--accent); border-radius:50%; flex-shrink:0; }
+  .announce-title { font-weight:600; font-size:13px; flex:1; }
+  .announce-date { font-size:10px; color:var(--text2); }
+  .announce-text { font-size:13px; color:var(--text2); line-height:1.6; padding-left:16px; }
+
+  /* STARS */
+  .star-card { background:linear-gradient(135deg,rgba(245,158,11,0.05),var(--surface)); border:1px solid rgba(245,158,11,0.15); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; gap:12px; }
+  .star-avatar { width:40px; height:40px; background:linear-gradient(135deg,var(--gold),#f97316); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .star-info { flex:1; }
+  .star-name { font-weight:600; font-size:14px; margin-bottom:2px; }
+  .star-reason { font-size:12px; color:var(--text2); }
+  .star-count { font-size:18px; letter-spacing:1px; }
+
+  /* FILES */
+  .file-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; gap:12px; cursor:pointer; text-decoration:none; color:inherit; }
+  .file-icon { width:40px; height:40px; background:rgba(79,142,247,0.1); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .file-info { flex:1; }
+  .file-name { font-weight:600; font-size:14px; margin-bottom:2px; }
+  .file-meta { font-size:11px; color:var(--text2); }
+  .file-arrow { color:var(--text2); font-size:18px; }
+
+  /* EMPTY */
+  .empty { text-align:center; padding:48px 20px; color:var(--text2); }
+  .empty-icon { font-size:48px; margin-bottom:12px; }
+  .empty-text { font-size:14px; }
+
+  /* BUTTONS */
+  .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border:none; border-radius:14px; padding:16px; font-family:'Unbounded',sans-serif; font-size:13px; font-weight:600; width:100%; cursor:pointer; transition:opacity 0.2s,transform 0.15s; letter-spacing:0.5px; margin-bottom:10px; }
+  .btn-primary:active { opacity:0.85; transform:scale(0.98); }
+  .btn-danger { background:linear-gradient(135deg,var(--red),#dc2626); color:#fff; border:none; border-radius:14px; padding:16px; font-family:'Unbounded',sans-serif; font-size:13px; font-weight:600; width:100%; cursor:pointer; transition:opacity 0.2s; margin-bottom:10px; }
+  .btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); border-radius:14px; padding:14px; font-family:'Geologica',sans-serif; font-size:13px; font-weight:500; width:100%; cursor:pointer; margin-bottom:10px; }
+
+  /* MODAL */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; display:none; align-items:flex-end; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border-radius:24px 24px 0 0; padding:24px 20px 32px; width:100%; max-height:90vh; overflow-y:auto; animation:slideUp 0.3s ease; }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  .modal-title { font-family:'Unbounded',sans-serif; font-size:16px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; }
+  .modal-close { background:var(--surface2); border:none; color:var(--text2); width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+  /* INPUTS */
+  .input-field { background:var(--surface2); border:1.5px solid var(--border); border-radius:14px; padding:14px 16px; font-family:'Geologica',sans-serif; font-size:14px; color:var(--text); width:100%; outline:none; transition:border-color 0.2s; margin-bottom:12px; }
+  .input-field:focus { border-color:var(--accent); }
+  .input-field::placeholder { color:var(--text2); }
+  .input-label { font-size:12px; color:var(--text2); margin-bottom:6px; font-weight:500; }
+
+  /* DAY SELECT */
+  .day-select { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .day-select-btn { padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text2); font-size:12px; cursor:pointer; transition:all 0.2s; }
+  .day-select-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  /* TEACHER PANEL */
+  .teacher-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+  .teacher-action-btn { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 12px; cursor:pointer; text-align:center; transition:all 0.2s; }
+  .teacher-action-btn:active { border-color:var(--accent); background:rgba(79,142,247,0.08); }
+  .teacher-action-icon { font-size:24px; margin-bottom:6px; }
+  .teacher-action-label { font-size:11px; font-weight:600; color:var(--text2); }
+
+  /* LIST ITEM WITH DELETE */
+  .list-item { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:10px; display:flex; align-items:flex-start; gap:10px; }
+  .list-item-content { flex:1; }
+  .list-item-title { font-weight:600; font-size:13px; margin-bottom:3px; }
+  .list-item-sub { font-size:11px; color:var(--text2); }
+  .delete-btn { background:rgba(239,68,68,0.1); border:none; color:var(--red); width:32px; height:32px; border-radius:8px; font-size:14px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+
+  /* PROFILE */
+  .profile-header { background:linear-gradient(135deg,var(--surface) 0%,rgba(124,58,237,0.1) 100%); border:1px solid var(--border); border-radius:20px; padding:24px; text-align:center; margin-bottom:20px; }
+  .profile-avatar { width:72px; height:72px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px; margin:0 auto 12px; }
+  .profile-name { font-family:'Unbounded',sans-serif; font-size:18px; font-weight:700; margin-bottom:4px; }
+  .profile-class { font-size:13px; color:var(--text2); margin-bottom:12px; }
+  .profile-role { display:inline-block; padding:4px 14px; border-radius:20px; font-size:12px; font-weight:600; }
+  .role-student { background:rgba(79,142,247,0.15); color:var(--accent); }
+  .role-teacher { background:rgba(16,185,129,0.15); color:var(--green); }
+  .profile-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 10px; text-align:center; }
+  .stat-num { font-family:'Unbounded',sans-serif; font-size:22px; font-weight:700; color:var(--accent); }
+  .stat-label { font-size:10px; color:var(--text2); margin-top:2px; }
+
+  /* REGISTER */
+  #register-screen { position:fixed; inset:0; background:var(--bg); z-index:100; display:flex; flex-direction:column; padding:40px 24px 32px; animation:fadeUp 0.3s ease; }
+  .reg-logo { text-align:center; margin-bottom:40px; }
+  .reg-logo-icon { font-size:56px; margin-bottom:12px; }
+  .reg-logo-title { font-family:'Unbounded',sans-serif; font-size:20px; font-weight:700; background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .reg-logo-sub { font-size:12px; color:var(--text2); margin-top:4px; }
+  .reg-step { display:none; flex:1; flex-direction:column; }
+  .reg-step.active { display:flex; }
+  .reg-step-title { font-family:'Unbounded',sans-serif; font-size:18px; font-weight:700; margin-bottom:6px; }
+  .reg-step-sub { font-size:13px; color:var(--text2); margin-bottom:28px; }
+  .role-picker { display:flex; flex-direction:column; gap:12px; margin-bottom:24px; }
+  .role-option { background:var(--surface); border:1.5px solid var(--border); border-radius:16px; padding:18px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:14px; }
+  .role-option.selected { border-color:var(--accent); background:rgba(79,142,247,0.08); }
+  .role-option-icon { font-size:28px; }
+  .role-option-info { flex:1; }
+  .role-option-title { font-weight:600; font-size:15px; margin-bottom:2px; }
+  .role-option-desc { font-size:12px; color:var(--text2); }
+  .role-check { width:22px; height:22px; border-radius:50%; border:2px solid var(--border); transition:all 0.2s; }
+  .role-option.selected .role-check { background:var(--accent); border-color:var(--accent); }
+  .reg-progress { display:flex; gap:6px; margin-bottom:32px; }
+  .reg-dot { height:4px; flex:1; background:var(--surface2); border-radius:2px; transition:background 0.3s; }
+  .reg-dot.done { background:var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-icon">🏫</div>
+  <div class="loader-text">ЗАВАНТАЖЕННЯ...</div>
+</div>
+
+<!-- REGISTER -->
+<div id="register-screen" style="display:none">
+  <div class="reg-logo">
+    <div class="reg-logo-icon">🏫</div>
+    <div class="reg-logo-title">Школа №26</div>
+    <div class="reg-logo-sub">Луцьк — Шкільний помічник</div>
+  </div>
+  <div class="reg-progress">
+    <div class="reg-dot" id="dot1"></div>
+    <div class="reg-dot" id="dot2"></div>
+    <div class="reg-dot" id="dot3"></div>
+    <div class="reg-dot" id="dot4"></div>
+  </div>
+  <div class="reg-step active" id="step1">
+    <div class="reg-step-title">Як тебе звати? 👋</div>
+    <div class="reg-step-sub">Введи своє ім'я та прізвище</div>
+    <input class="input-field" id="inp-name" placeholder="Ім'я" type="text">
+    <input class="input-field" id="inp-surname" placeholder="Прізвище" type="text">
+    <button class="btn-primary" onclick="regStep1()">Далі →</button>
+  </div>
+  <div class="reg-step" id="step2">
+    <div class="reg-step-title">Твій клас 🏫</div>
+    <div class="reg-step-sub">Наприклад: 9А, 10Б, 11В</div>
+    <input class="input-field" id="inp-class" placeholder="Клас" type="text">
+    <button class="btn-primary" onclick="regStep2()">Далі →</button>
+  </div>
+  <div class="reg-step" id="step3">
+    <div class="reg-step-title">Хто ти? 🎭</div>
+    <div class="reg-step-sub">Обери свою роль</div>
+    <div class="role-picker">
+      <div class="role-option" id="role-student" onclick="selectRole('student')">
+        <div class="role-option-icon">🎒</div>
+        <div class="role-option-info">
+          <div class="role-option-title">Учень</div>
+          <div class="role-option-desc">Переглядаю ДЗ, розклад, матеріали</div>
+        </div>
+        <div class="role-check"></div>
+      </div>
+      <div class="role-option" id="role-teacher" onclick="selectRole('teacher')">
+        <div class="role-option-icon">👨‍🏫</div>
+        <div class="role-option-info">
+          <div class="role-option-title">Вчитель</div>
+          <div class="role-option-desc">Додаю ДЗ, розклад, оголошення</div>
+        </div>
+        <div class="role-check"></div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="regStep3()">Далі →</button>
+  </div>
+  <div class="reg-step" id="step4">
+    <div class="reg-step-title">Пароль вчителя 🔐</div>
+    <div class="reg-step-sub">Введи спеціальний пароль</div>
+    <input class="input-field" id="inp-password" placeholder="Пароль" type="password">
+    <div id="pass-error" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none">❌ Невірний пароль</div>
+    <button class="btn-primary" onclick="regStep4()">Увійти як вчитель</button>
+    <button onclick="selectRole('student');regStep3()" style="background:none;border:none;color:var(--text2);font-size:13px;width:100%;padding:12px;cursor:pointer">← Назад</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="header">
+    <div class="header-top">
+      <div class="school-badge">
+        <div class="school-icon">🏫</div>
+        <div class="school-name">Школа №26<span>Луцьк</span></div>
+      </div>
+      <div class="user-avatar" onclick="showSection('profile')">👤</div>
+    </div>
+    <div class="greeting">
+      <div class="greeting-hello">Вітаємо,</div>
+      <div class="greeting-name" id="header-name">—</div>
+      <span class="greeting-class" id="header-class">Клас —</span>
+      <span class="teacher-badge" id="teacher-badge" style="display:none">👨‍🏫 Вчитель</span>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showSection('hw')" id="nav-hw"><span class="nav-icon">📚</span> ДЗ</button>
+    <button class="nav-btn" onclick="showSection('schedule')" id="nav-schedule"><span class="nav-icon">📅</span> Розклад</button>
+    <button class="nav-btn" onclick="showSection('announce')" id="nav-announce"><span class="nav-icon">📢</span> Новини</button>
+    <button class="nav-btn" onclick="showSection('files')" id="nav-files"><span class="nav-icon">📎</span> Матеріали</button>
+    <button class="nav-btn" onclick="showSection('stars')" id="nav-stars"><span class="nav-icon">🏆</span> Досягнення</button>
+    <button class="nav-btn" onclick="showSection('profile')" id="nav-profile"><span class="nav-icon">👤</span> Профіль</button>
+    <button class="nav-btn" onclick="showSection('about')" id="nav-about"><span class="nav-icon">ℹ️</span> Про бота</button>
+    <button class="nav-btn" onclick="showSection('support')" id="nav-support"><span class="nav-icon">💬</span> Підтримка</button>
+  </nav>
+
+  <div class="content">
+
+    <!-- ДЗ -->
+    <div class="section active" id="section-hw">
+      <div class="section-title">📚 Домашні завдання</div>
+      <div id="teacher-hw-actions" style="display:none">
+        <button class="btn-primary" onclick="openModal('modal-add-hw')">➕ Додати ДЗ</button>
+      </div>
+      <div id="hw-list"></div>
+    </div>
+
+    <!-- РОЗКЛАД -->
+    <div class="section" id="section-schedule">
+      <div class="section-title">📅 Розклад</div>
+      <div id="teacher-schedule-actions" style="display:none">
+        <button class="btn-primary" onclick="openModal('modal-add-schedule')">✏️ Редагувати розклад</button>
+      </div>
+      <div class="day-picker" id="day-picker"></div>
+      <div id="schedule-content"></div>
+    </div>
+
+    <!-- ОГОЛОШЕННЯ -->
+    <div class="section" id="section-announce">
+      <div class="section-title">📢 Оголошення</div>
+      <div id="teacher-announce-actions" style="display:none">
+        <button class="btn-primary" onclick="openModal('modal-add-announce')">📢 Нове оголошення</button>
+      </div>
+      <div id="announce-list"></div>
+    </div>
+
+    <!-- МАТЕРІАЛИ -->
+    <div class="section" id="section-files">
+      <div class="section-title">📎 Матеріали</div>
+      <div id="teacher-files-actions" style="display:none">
+        <button class="btn-primary" onclick="openModal('modal-add-file')">📎 Додати матеріал</button>
+      </div>
+      <div id="files-list"></div>
+    </div>
+
+    <!-- ДОСЯГНЕННЯ -->
+    <div class="section" id="section-stars">
+      <div class="section-title">🏆 Досягнення</div>
+      <div id="teacher-stars-actions" style="display:none">
+        <button class="btn-primary" onclick="openModal('modal-add-star')">⭐ Видати зірку</button>
+      </div>
+      <div id="stars-list"></div>
+    </div>
+
+    <!-- ПРО БОТА -->
+    <div class="section" id="section-about">
+      <div class="section-title">ℹ️ Про бота</div>
+      <div class="card" style="background:linear-gradient(135deg,var(--surface) 0%,rgba(79,142,247,0.05) 100%)">
+        <div style="text-align:center;padding:12px 0 20px">
+          <div style="font-size:56px;margin-bottom:12px">🏫</div>
+          <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px">Школа №26</div>
+          <div style="font-size:13px;color:var(--text2)">Шкільний помічник — Луцьк</div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+          <div style="font-size:13px;color:var(--text2);line-height:1.8">
+            📚 <b>Для чого:</b> Зручний спосіб переглядати домашні завдання, розклад уроків, оголошення та матеріали прямо в Telegram<br><br>
+            🎒 <b>Для учнів:</b> Відкрий додаток → зареєструйся → обери свій клас → і все ДЗ та розклад одразу доступні<br><br>
+            👨‍🏫 <b>Для вчителів:</b> Введи пароль вчителя при реєстрації → отримаєш доступ до додавання ДЗ, розкладу, оголошень та зірок учням<br><br>
+            🔔 <b>Сповіщення:</b> При новому ДЗ або оголошенні — бот автоматично повідомляє всіх учнів класу
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;display:flex;flex-direction:column;gap:10px">
+          <a href="https://t.me/school26info" target="_blank" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;background:var(--surface2);border-radius:12px;padding:12px 14px">
+            <span style="font-size:22px">📢</span>
+            <div>
+              <div style="font-weight:600;font-size:13px">Telegram канал</div>
+              <div style="font-size:11px;color:var(--accent)">@school26info</div>
+            </div>
+            <span style="margin-left:auto;color:var(--text2)">›</span>
+          </a>
+          <a href="https://t.me/aquaee" target="_blank" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;background:var(--surface2);border-radius:12px;padding:12px 14px">
+            <span style="font-size:22px">👨‍💻</span>
+            <div>
+              <div style="font-weight:600;font-size:13px">Розробник</div>
+              <div style="font-size:11px;color:var(--accent)">@aquaee</div>
+            </div>
+            <span style="margin-left:auto;color:var(--text2)">›</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ПІДТРИМКА -->
+    <div class="section" id="section-support">
+      <div class="section-title">💬 Підтримка</div>
+      <div class="card" style="margin-bottom:16px">
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">
+          Маєш питання або знайшов помилку? Напиши нам — відповімо якнайшвидше 👇
+        </div>
+        <div class="input-label">Повідомлення</div>
+        <textarea class="input-field" id="support-text" placeholder="Опиши свою проблему або питання..." rows="4" style="resize:none"></textarea>
+        <button class="btn-primary" id="support-btn" onclick="submitSupport()">📨 Надіслати</button>
+      </div>
+      <div class="card" style="background:rgba(79,142,247,0.05)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:22px">💡</span>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5">
+            Також можна написати напряму розробнику: <a href="https://t.me/aquaee" style="color:var(--accent)">@aquaee</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ПРОФІЛЬ -->
+    <div class="section" id="section-profile">
+      <div class="profile-header">
+        <div class="profile-avatar">👤</div>
+        <div class="profile-name" id="profile-name">—</div>
+        <div class="profile-class" id="profile-class">—</div>
+        <div class="profile-role" id="profile-role">Учень</div>
+      </div>
+      <div class="profile-stats">
+        <div class="stat-card"><div class="stat-num" id="stat-hw">0</div><div class="stat-label">ДЗ</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-ann">0</div><div class="stat-label">Новини</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-stars">⭐0</div><div class="stat-label">Зірок</div></div>
+      </div>
+      <button class="btn-danger" onclick="logout()">Вийти з акаунту</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== МОДАЛЬНІ ВІКНА ===== -->
+
+<!-- ДОДАТИ ДЗ -->
+<div class="modal-overlay" id="modal-add-hw" onclick="closeModalOutside(event,'modal-add-hw')">
+  <div class="modal">
+    <div class="modal-title">➕ Додати ДЗ <button class="modal-close" onclick="closeModal('modal-add-hw')">✕</button></div>
+    <div class="input-label">Предмет</div>
+    <input class="input-field" id="hw-subject" placeholder="Математика, Фізика...">
+    <div class="input-label">Клас</div>
+    <input class="input-field" id="hw-class" placeholder="9А, 10Б...">
+    <div class="input-label">День</div>
+    <div class="day-select" id="hw-day-select">
+      <div class="day-select-btn" onclick="selectDay(this,'mon')">Пн</div>
+      <div class="day-select-btn" onclick="selectDay(this,'tue')">Вт</div>
+      <div class="day-select-btn" onclick="selectDay(this,'wed')">Ср</div>
+      <div class="day-select-btn" onclick="selectDay(this,'thu')">Чт</div>
+      <div class="day-select-btn" onclick="selectDay(this,'fri')">Пт</div>
+    </div>
+    <div class="input-label">Завдання</div>
+    <textarea class="input-field" id="hw-text" placeholder="Стор. 47, вправи 12-15..." rows="3" style="resize:none"></textarea>
+    <button class="btn-primary" onclick="submitHW()">✅ Зберегти</button>
+  </div>
+</div>
+
+<!-- ДОДАТИ РОЗКЛАД -->
+<div class="modal-overlay" id="modal-add-schedule" onclick="closeModalOutside(event,'modal-add-schedule')">
+  <div class="modal">
+    <div class="modal-title">📅 Розклад <button class="modal-close" onclick="closeModal('modal-add-schedule')">✕</button></div>
+    <div class="input-label">Клас</div>
+    <input class="input-field" id="sched-class" placeholder="9А, 10Б...">
+    <div class="input-label">День</div>
+    <div class="day-select" id="sched-day-select">
+      <div class="day-select-btn" onclick="selectDay(this,'mon')">Пн</div>
+      <div class="day-select-btn" onclick="selectDay(this,'tue')">Вт</div>
+      <div class="day-select-btn" onclick="selectDay(this,'wed')">Ср</div>
+      <div class="day-select-btn" onclick="selectDay(this,'thu')">Чт</div>
+      <div class="day-select-btn" onclick="selectDay(this,'fri')">Пт</div>
+    </div>
+    <div id="lessons-editor">
+      <div class="input-label">Уроки (кожен з нового рядка: Назва | Час | Кабінет)</div>
+      <textarea class="input-field" id="sched-text" placeholder="Математика | 8:00-8:45 | каб. 21&#10;Фізика | 8:55-9:40 | каб. 14&#10;Англійська | 9:50-10:35 | каб. 8" rows="6" style="resize:none"></textarea>
+    </div>
+    <button class="btn-primary" onclick="submitSchedule()">✅ Зберегти</button>
+  </div>
+</div>
+
+<!-- ДОДАТИ ОГОЛОШЕННЯ -->
+<div class="modal-overlay" id="modal-add-announce" onclick="closeModalOutside(event,'modal-add-announce')">
+  <div class="modal">
+    <div class="modal-title">📢 Оголошення <button class="modal-close" onclick="closeModal('modal-add-announce')">✕</button></div>
+    <div class="input-label">Для кого (клас або "всі")</div>
+    <input class="input-field" id="ann-class" placeholder="9А, 10Б або всі">
+    <div class="input-label">Заголовок</div>
+    <input class="input-field" id="ann-title" placeholder="Контрольна з математики...">
+    <div class="input-label">Текст</div>
+    <textarea class="input-field" id="ann-text" placeholder="Деталі оголошення..." rows="3" style="resize:none"></textarea>
+    <button class="btn-primary" onclick="submitAnnounce()">✅ Надіслати</button>
+  </div>
+</div>
+
+<!-- ДОДАТИ МАТЕРІАЛ -->
+<div class="modal-overlay" id="modal-add-file" onclick="closeModalOutside(event,'modal-add-file')">
+  <div class="modal">
+    <div class="modal-title">📎 Матеріал <button class="modal-close" onclick="closeModal('modal-add-file')">✕</button></div>
+    <div class="input-label">Клас</div>
+    <input class="input-field" id="file-class" placeholder="9А, 10Б...">
+    <div class="input-label">Предмет</div>
+    <input class="input-field" id="file-subject" placeholder="Математика...">
+    <div class="input-label">Назва</div>
+    <input class="input-field" id="file-name" placeholder="Конспект: Рівняння...">
+    <div class="input-label">Посилання</div>
+    <input class="input-field" id="file-link" placeholder="https://..." type="url">
+    <button class="btn-primary" onclick="submitFile()">✅ Зберегти</button>
+  </div>
+</div>
+
+<!-- ВИДАТИ ЗІРКУ -->
+<div class="modal-overlay" id="modal-add-star" onclick="closeModalOutside(event,'modal-add-star')">
+  <div class="modal">
+    <div class="modal-title">⭐ Видати зірку <button class="modal-close" onclick="closeModal('modal-add-star')">✕</button></div>
+    <div class="input-label">Клас учня</div>
+    <input class="input-field" id="star-class" placeholder="9А, 10Б...">
+    <div class="input-label">Ім'я та прізвище учня</div>
+    <input class="input-field" id="star-name" placeholder="Олексій Мельник">
+    <div class="input-label">Кількість зірок</div>
+    <div class="day-select">
+      <div class="day-select-btn" onclick="selectStars(this,1)">⭐1</div>
+      <div class="day-select-btn" onclick="selectStars(this,2)">⭐2</div>
+      <div class="day-select-btn" onclick="selectStars(this,3)">⭐3</div>
+      <div class="day-select-btn" onclick="selectStars(this,4)">⭐4</div>
+      <div class="day-select-btn" onclick="selectStars(this,5)">⭐5</div>
+    </div>
+    <div class="input-label">За що</div>
+    <input class="input-field" id="star-reason" placeholder="Відмінна відповідь на уроці...">
+    <button class="btn-primary" onclick="submitStar()">✅ Видати</button>
+  </div>
+</div>
+
+<script>
+const API = 'https://26bot-production.up.railway.app';
+const TEACHER_PASS = 'school26';
+const DAYS = ['mon','tue','wed','thu','fri'];
+const DAYS_UA = {mon:'Пн',tue:'Вт',wed:'Ср',thu:'Чт',fri:'Пт'};
+const DAYS_FULL = {mon:'Понеділок',tue:'Вівторок',wed:'Середа',thu:'Четвер',fri:"П'ятниця"};
+
+let user = null, appData = null, selectedRole = null;
+let currentDay = DAYS[new Date().getDay()-1] || 'mon';
+let selectedHWDay = null, selectedSchedDay = null, selectedStarCount = 1;
+
+// ===== ІНІЦІАЛІЗАЦІЯ =====
+window.addEventListener('load', () => {
+  if (window.Telegram?.WebApp) { Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
+  setTimeout(() => {
+    document.getElementById('loader').style.opacity = '0';
+    setTimeout(() => { document.getElementById('loader').style.display = 'none'; checkUser(); }, 400);
+  }, 1000);
+});
+
+function getTgUserId() {
+  if (window.Telegram?.WebApp?.initDataUnsafe?.user?.id) return String(Telegram.WebApp.initDataUnsafe.user.id);
+  let id = localStorage.getItem('school26_test_id');
+  if (!id) { id = 'test_' + Math.random().toString(36).substr(2,9); localStorage.setItem('school26_test_id', id); }
+  return id;
+}
+
+async function checkUser() {
+  const saved = localStorage.getItem('school26_user');
+  if (saved) {
+    user = JSON.parse(saved);
+    await loadRealData();
+    showApp();
+  } else {
+    document.getElementById('register-screen').style.display = 'flex';
+  }
+}
+
+// ===== РЕЄСТРАЦІЯ =====
+let regData = {};
+function updateDots(step) {
+  for (let i=1;i<=4;i++) document.getElementById(`dot${i}`).className='reg-dot'+(i<=step?' done':'');
+}
+function regStep1() {
+  const name=document.getElementById('inp-name').value.trim(), surname=document.getElementById('inp-surname').value.trim();
+  if (!name||!surname) { alert("Введи ім'я та прізвище!"); return; }
+  regData={name,surname};
+  document.getElementById('step1').classList.remove('active');
+  document.getElementById('step2').classList.add('active');
+  updateDots(2);
+}
+function regStep2() {
+  const cls=document.getElementById('inp-class').value.trim().toUpperCase();
+  if (!cls) { alert('Введи клас!'); return; }
+  regData.class=cls;
+  document.getElementById('step2').classList.remove('active');
+  document.getElementById('step3').classList.add('active');
+  updateDots(3);
+}
+function selectRole(role) {
+  selectedRole=role;
+  document.getElementById('role-student').classList.toggle('selected',role==='student');
+  document.getElementById('role-teacher').classList.toggle('selected',role==='teacher');
+}
+function regStep3() {
+  if (!selectedRole) { alert('Обери роль!'); return; }
+  regData.role=selectedRole;
+  if (selectedRole==='teacher') {
+    document.getElementById('step3').classList.remove('active');
+    document.getElementById('step4').classList.add('active');
+    updateDots(4);
+  } else { finishReg(); }
+}
+async function regStep4() {
+  const pass=document.getElementById('inp-password').value.trim();
+  if (pass!==TEACHER_PASS) { document.getElementById('pass-error').style.display='block'; return; }
+  finishReg();
+}
+async function finishReg() {
+  const userId=getTgUserId();
+  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  const tgUsername = tgUser?.username || '';
+  const res=await apiCall('POST','/api/register',{user_id:userId,...regData,password:document.getElementById('inp-password')?.value||'',tg_username:tgUsername});
+  user=regData; user.id=userId;
+  localStorage.setItem('school26_user',JSON.stringify(user));
+  await loadRealData();
+  document.getElementById('register-screen').style.display='none';
+  showApp();
+}
+function logout() {
+  if (confirm('Вийти з акаунту?')) { localStorage.removeItem('school26_user'); location.reload(); }
+}
+
+// ===== APP =====
+function showApp() {
+  document.getElementById('app').style.display='block';
+  document.getElementById('header-name').textContent=user.name;
+  document.getElementById('header-class').textContent=`Клас ${user.class}`;
+  if (user.role==='teacher') {
+    document.getElementById('teacher-badge').style.display='inline-block';
+    ['hw','schedule','announce','files','stars'].forEach(s=>{
+      const el=document.getElementById(`teacher-${s}-actions`);
+      if (el) el.style.display='block';
+    });
+  }
+  document.getElementById('profile-name').textContent=`${user.name} ${user.surname||''}`;
+  document.getElementById('profile-class').textContent=`Клас ${user.class}`;
+  const roleEl=document.getElementById('profile-role');
+  if (user.role==='teacher') { roleEl.textContent='👨‍🏫 Вчитель'; roleEl.className='profile-role role-teacher'; }
+  else { roleEl.textContent='🎒 Учень'; roleEl.className='profile-role role-student'; }
+  renderAll();
+}
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`section-${name}`).classList.add('active');
+  document.getElementById(`nav-${name}`).classList.add('active');
+  if (name==='schedule') renderSchedule(currentDay);
+  if (name==='profile') updateStats();
+}
+
+// ===== API =====
+async function apiCall(method, path, body=null) {
+  const opts={method,headers:{'Content-Type':'application/json'}};
+  if (body) opts.body=JSON.stringify(body);
+  try { const res=await fetch(API+path,opts); return await res.json(); }
+  catch(e) { console.error(e); return {ok:false}; }
+}
+
+async function loadRealData() {
+  if (!user?.class) return;
+  const cls=user.class;
+  const [hwRes,schedRes,annRes,filesRes,starsRes]=await Promise.all([
+    apiCall('GET',`/api/homework/${cls}`),
+    apiCall('GET',`/api/schedule/${cls}`),
+    apiCall('GET',`/api/announcements/${cls}`),
+    apiCall('GET',`/api/files/${cls}`),
+    apiCall('GET',`/api/stars/${cls}`),
+  ]);
+  appData={
+    homework:{[cls]:hwRes.ok?hwRes.homework:[]},
+    schedule:{[cls]:schedRes.ok?schedRes.schedule:{}},
+    announcements:annRes.ok?annRes.announcements:[],
+    files:filesRes.ok?filesRes.files:[],
+    stars:starsRes.ok?starsRes.stars:[],
+  };
+}
+
+// ===== МОДАЛКИ =====
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModalOutside(e,id) { if (e.target===document.getElementById(id)) closeModal(id); }
+
+function selectDay(el, day) {
+  const parent=el.parentElement;
+  parent.querySelectorAll('.day-select-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  if (parent.id==='hw-day-select') selectedHWDay=day;
+  if (parent.id==='sched-day-select') selectedSchedDay=day;
+}
+function selectStars(el, count) {
+  el.closest('.day-select').querySelectorAll('.day-select-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  selectedStarCount=count;
+}
+
+// ===== SUBMIT ВЧИТЕЛЯ =====
+async function submitHW() {
+  const subject=document.getElementById('hw-subject').value.trim();
+  const cls=document.getElementById('hw-class').value.trim().toUpperCase();
+  const text=document.getElementById('hw-text').value.trim();
+  if (!subject||!cls||!text||!selectedHWDay) { alert('Заповни всі поля і обери день!'); return; }
+  const res=await apiCall('POST','/api/homework',{user_id:getTgUserId(),subject,class:cls,text,day:selectedHWDay});
+  if (res.ok) {
+    closeModal('modal-add-hw');
+    if (!appData.homework[cls]) appData.homework[cls]=[];
+    appData.homework[cls].push(res.entry);
+    if (cls===user.class) renderHW();
+    alert('✅ ДЗ додано!');
+  }
+}
+
+async function submitSchedule() {
+  const cls=document.getElementById('sched-class').value.trim().toUpperCase();
+  const text=document.getElementById('sched-text').value.trim();
+  if (!cls||!text||!selectedSchedDay) { alert('Заповни всі поля і обери день!'); return; }
+  const lessons=text.split('\n').filter(l=>l.trim()).map((l,i)=>{
+    const parts=l.split('|').map(p=>p.trim());
+    return {num:i+1,name:parts[0]||l,time:parts[1]||'',room:parts[2]||''};
+  });
+  const res=await apiCall('POST','/api/schedule',{user_id:getTgUserId(),class:cls,day:selectedSchedDay,lessons});
+  if (res.ok) {
+    closeModal('modal-add-schedule');
+    if (!appData.schedule[cls]) appData.schedule[cls]={};
+    appData.schedule[cls][selectedSchedDay]=lessons;
+    renderSchedule(currentDay);
+    alert('✅ Розклад збережено!');
+  }
+}
+
+async function submitAnnounce() {
+  const cls=document.getElementById('ann-class').value.trim().toUpperCase()||'ВСІ';
+  const title=document.getElementById('ann-title').value.trim();
+  const text=document.getElementById('ann-text').value.trim();
+  if (!title||!text) { alert('Заповни заголовок і текст!'); return; }
+  const res=await apiCall('POST','/api/announcements',{user_id:getTgUserId(),class:cls,title,text});
+  if (res.ok) {
+    closeModal('modal-add-announce');
+    appData.announcements.unshift(res.entry);
+    renderAnnounce();
+    alert('✅ Оголошення надіслано!');
+  }
+}
+
+async function submitFile() {
+  const cls=document.getElementById('file-class').value.trim().toUpperCase();
+  const subject=document.getElementById('file-subject').value.trim();
+  const name=document.getElementById('file-name').value.trim();
+  const link=document.getElementById('file-link').value.trim();
+  if (!cls||!subject||!name||!link) { alert('Заповни всі поля!'); return; }
+  const res=await apiCall('POST','/api/files',{user_id:getTgUserId(),class:cls,subject,name,link});
+  if (res.ok) {
+    closeModal('modal-add-file');
+    appData.files.push(res.entry);
+    renderFiles();
+    alert('✅ Матеріал додано!');
+  }
+}
+
+async function submitStar() {
+  const cls=document.getElementById('star-class').value.trim().toUpperCase();
+  const name=document.getElementById('star-name').value.trim();
+  const reason=document.getElementById('star-reason').value.trim();
+  if (!cls||!name||!reason) { alert('Заповни всі поля!'); return; }
+  const res=await apiCall('POST','/api/stars',{user_id:getTgUserId(),class:cls,name,stars:selectedStarCount,reason});
+  if (res.ok) {
+    closeModal('modal-add-star');
+    appData.stars.unshift(res.entry);
+    renderStars();
+    alert('✅ Зірку видано!');
+  }
+}
+
+async function deleteHW(cls, idx) {
+  if (!confirm('Видалити це ДЗ?')) return;
+  const res=await apiCall('DELETE',`/api/homework/${cls}/${idx}?user_id=${getTgUserId()}`);
+  if (res.ok) { appData.homework[cls].splice(idx,1); renderHW(); }
+}
+
+// ===== РЕНДЕР =====
+function renderAll() { renderHW(); renderSchedule(currentDay); renderAnnounce(); renderFiles(); renderStars(); buildDayPicker(); }
+
+function renderHW() {
+  const cls=user.class;
+  const list=appData?.homework?.[cls]||[];
+  const el=document.getElementById('hw-list');
+  if (!list.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Домашніх завдань немає</div></div>`; return; }
+  const grouped={};
+  list.forEach((hw,i)=>{ const d=hw.day||'other'; if(!grouped[d])grouped[d]=[]; grouped[d].push({...hw,idx:i}); });
+  let html='';
+  DAYS.forEach(day=>{
+    if (!grouped[day]) return;
+    html+=`<div class="hw-day-label">${DAYS_FULL[day]}</div>`;
+    grouped[day].forEach(hw=>{
+      const delBtn=user.role==='teacher'?`<button class="delete-btn" onclick="deleteHW('${cls}',${hw.idx})">🗑️</button>`:'';
+      html+=`<div class="list-item"><div class="list-item-content"><div class="list-item-title">📚 ${hw.subject}</div><div class="list-item-sub">${hw.text}</div><div class="list-item-sub" style="margin-top:4px">📅 ${hw.date} · 👨‍🏫 ${hw.teacher}</div></div>${delBtn}</div>`;
+    });
+  });
+  el.innerHTML=html;
+}
+
+function buildDayPicker() {
+  const today=DAYS[new Date().getDay()-1]||'mon';
+  document.getElementById('day-picker').innerHTML=DAYS.map(day=>
+    `<button class="day-btn ${day===currentDay?'active':''} ${day===today&&day!==currentDay?'today':''}" onclick="switchDay('${day}')">${DAYS_FULL[day]}</button>`
+  ).join('');
+}
+
+function switchDay(day) { currentDay=day; buildDayPicker(); renderSchedule(day); }
+
+function renderSchedule(day) {
+  const lessons=appData?.schedule?.[user.class]?.[day]||[];
+  const el=document.getElementById('schedule-content');
+  if (!lessons.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Розкладу немає</div></div>`; return; }
+  el.innerHTML=`<div class="card">${lessons.map(l=>`<div class="lesson"><div class="lesson-num">${l.num}</div><div class="lesson-info"><div class="lesson-name">${l.name}</div><div class="lesson-time"><span>⏰ ${l.time}</span><span class="lesson-room">📍 ${l.room}</span></div></div></div>`).join('')}</div>`;
+}
+
+function renderAnnounce() {
+  const list=appData?.announcements||[];
+  const el=document.getElementById('announce-list');
+  if (!list.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Оголошень немає</div></div>`; return; }
+  el.innerHTML=list.map(a=>`<div class="announce-card"><div class="announce-top"><div class="announce-dot"></div><div class="announce-title">${a.title||'Оголошення'}</div><div class="announce-date">${a.date}</div></div><div class="announce-text">${a.text}</div><div class="card-meta" style="padding-left:16px;margin-top:8px"><span>👨‍🏫 ${a.teacher}</span></div></div>`).join('');
+}
+
+function renderFiles() {
+  const list=appData?.files||[];
+  const el=document.getElementById('files-list');
+  if (!list.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Матеріалів немає</div></div>`; return; }
+  el.innerHTML=list.map(f=>`<a class="file-card" href="${f.link}" target="_blank"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">${f.name}</div><div class="file-meta">📚 ${f.subject} · ${f.date}</div></div><div class="file-arrow">›</div></a>`).join('');
+}
+
+function renderStars() {
+  const list=appData?.stars||[];
+  const el=document.getElementById('stars-list');
+  if (!list.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Досягнень немає</div></div>`; return; }
+  el.innerHTML=list.map(s=>`<div class="star-card"><div class="star-avatar">🏆</div><div class="star-info"><div class="star-name">${s.name}</div><div class="star-reason">${s.reason}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${s.date}</div></div><div class="star-count">${'⭐'.repeat(s.stars)}</div></div>`).join('');
+}
+
+async function submitSupport() {
+  const text = document.getElementById('support-text').value.trim();
+  if (!text) { alert('Введи повідомлення!'); return; }
+  const btn = document.getElementById('support-btn');
+  btn.textContent = '⏳ Надсилаємо...';
+  btn.disabled = true;
+  const res = await apiCall('POST', '/api/support', {
+    user_id: getTgUserId(),
+    message: text
+  });
+  if (res.ok) {
+    document.getElementById('support-text').value = '';
+    btn.textContent = '✅ Надіслано!';
+    setTimeout(() => { btn.textContent = '📨 Надіслати'; btn.disabled = false; }, 3000);
+  } else {
+    btn.textContent = '❌ Помилка, спробуй ще';
+    btn.disabled = false;
+  }
+}
+
+function updateStats() {
+  document.getElementById('stat-hw').textContent=appData?.homework?.[user.class]?.length||0;
+  document.getElementById('stat-ann').textContent=appData?.announcements?.length||0;
+  document.getElementById('stat-stars').textContent='⭐'+(appData?.stars||[]).reduce((a,s)=>a+s.stars,0);
+}
+</script>
+</body>
+</html>
